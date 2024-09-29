@@ -14,6 +14,11 @@ class DatabaseHelper {
     return _database!;
   }
 
+  Future<List<Map<String, dynamic>>> getAllCadastros() async {
+  final db = await database;
+  return await db.query('cadastro');
+}
+
   Future<Database> _initDb() async {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
@@ -40,6 +45,33 @@ class DatabaseHelper {
             data_hora TEXT NOT NULL
           );
         ''');
+
+        await db.execute('''
+          CREATE TRIGGER trg_after_insert
+          AFTER INSERT ON cadastro
+          BEGIN
+            INSERT INTO log_operacoes (operacao, data_hora)
+            VALUES ('Insert', DATETIME('now'));
+          END;
+        ''');
+
+        await db.execute('''
+          CREATE TRIGGER trg_after_update
+          AFTER UPDATE ON cadastro
+          BEGIN
+            INSERT INTO log_operacoes (operacao, data_hora)
+            VALUES ('Update', DATETIME('now'));
+          END;
+        ''');
+
+        await db.execute('''
+          CREATE TRIGGER trg_after_delete
+          AFTER DELETE ON cadastro
+          BEGIN
+            INSERT INTO log_operacoes (operacao, data_hora)
+            VALUES ('Delete', DATETIME('now'));
+          END;
+        ''');
       },
     );
   }
@@ -50,8 +82,6 @@ class DatabaseHelper {
       'texto': texto,
       'numero': numero,
     });
-
-    await _logOperacao('Insert');
     return result;
   }
 
@@ -63,8 +93,6 @@ class DatabaseHelper {
       where: 'id = ?',
       whereArgs: [id],
     );
-
-    await _logOperacao('Update');
     return result;
   }
 
@@ -78,18 +106,7 @@ class DatabaseHelper {
       where: 'numero = ?',
       whereArgs: [numero],
     );
-
-    await _logOperacao('Delete');
     return result;
-  }
-
-  Future<void> _logOperacao(String operacao) async {
-    final db = await database;
-    final now = DateTime.now().toIso8601String();
-    await db.insert('log_operacoes', {
-      'operacao': operacao,
-      'data_hora': now,
-    });
   }
 
   Future<Map<String, dynamic>?> getCadastroByNumero(int numero) async {

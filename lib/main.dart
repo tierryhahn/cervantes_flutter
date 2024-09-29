@@ -31,6 +31,20 @@ class _MyHomePageState extends State<MyHomePage> {
   final _textController = TextEditingController();
   final _numberController = TextEditingController();
   final dbHelper = DatabaseHelper();
+  List<Map<String, dynamic>> cadastros = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCadastros();
+  }
+
+  Future<void> _loadCadastros() async {
+    final allCadastros = await dbHelper.getAllCadastros();
+    setState(() {
+      cadastros = allCadastros;
+    });
+  }
 
   void _showMessage(BuildContext context, String message) {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
@@ -39,11 +53,12 @@ class _MyHomePageState extends State<MyHomePage> {
   Future<void> _handleInsert(BuildContext context) async {
     final text = _textController.text;
     final number = int.tryParse(_numberController.text);
-
     if (text.isNotEmpty && number != null && number > 0) {
       try {
         await dbHelper.insertCadastro(text, number);
         _showMessage(context, 'Registrado com sucesso');
+        _clearForm();
+        _loadCadastros();
       } catch (e) {
         if (e is DatabaseException && e.isUniqueConstraintError()) {
           _showMessage(context, 'Erro: O número já está cadastrado.');
@@ -74,6 +89,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   updatedCadastro['numero'],
                 );
                 _showMessage(context, 'Cadastro atualizado com sucesso');
+                _loadCadastros();
                 Navigator.pop(context);
               },
             ),
@@ -94,6 +110,7 @@ class _MyHomePageState extends State<MyHomePage> {
       final result = await dbHelper.deleteCadastro(number);
       if (result > 0) {
         _showMessage(context, 'Deletado com sucesso');
+        _loadCadastros();
       } else {
         _showMessage(context, 'Nenhum cadastro encontrado para deletar');
       }
@@ -115,96 +132,145 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: Center(
         child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Card(
-              elevation: 8.0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12.0),
-              ),
-              child: Padding(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Teste Cervantes',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 20),
-                    Container(
-                      width: 300.0,
-                      child: TextField(
-                        controller: _textController,
-                        decoration: InputDecoration(
-                          labelText: 'Nome',
-                          border: OutlineInputBorder(),
+                child: Card(
+                  elevation: 8.0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Teste Cervantes',
+                          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                         ),
-                        maxLength: 50,
-                      ),
-                    ),
-                    SizedBox(height: 20),
-                    Container(
-                      width: 300.0,
-                      child: TextField(
-                        controller: _numberController,
-                        decoration: InputDecoration(
-                          labelText: 'Número',
-                          border: OutlineInputBorder(),
+                        SizedBox(height: 20),
+                        Container(
+                          width: 300.0,
+                          child: TextField(
+                            controller: _textController,
+                            decoration: InputDecoration(
+                              labelText: 'Nome',
+                              border: OutlineInputBorder(),
+                            ),
+                            maxLength: 50,
+                          ),
                         ),
-                        keyboardType: TextInputType.number,
-                      ),
+                        SizedBox(height: 20),
+                        Container(
+                          width: 300.0,
+                          child: TextField(
+                            controller: _numberController,
+                            decoration: InputDecoration(
+                              labelText: 'Número',
+                              border: OutlineInputBorder(),
+                            ),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                        SizedBox(height: 20),
+                        Container(
+                          width: 300.0,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: () => _handleInsert(context),
+                                  child: Text('Enviar'),
+                                ),
+                              ),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: () => _searchCadastroForEditing(context),
+                                  child: Text('Editar'),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 10),
+                        Container(
+                          width: 300.0,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            children: [
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: () => _handleDelete(context),
+                                  child: Text('Deletar'),
+                                ),
+                              ),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: ElevatedButton(
+                                  onPressed: _clearForm,
+                                  child: Text('Limpar'),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(height: 20),
-                    Container(
-                      width: 300.0,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () => _handleInsert(context),
-                              child: Text('Enviar'),
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () => _searchCadastroForEditing(context),
-                              child: Text('Editar'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    Container(
-                      width: 300.0,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
-                        children: [
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: () => _handleDelete(context),
-                              child: Text('Deletar'),
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          Expanded(
-                            child: ElevatedButton(
-                              onPressed: _clearForm,
-                              child: Text('Limpar'),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
-            ),
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Card(
+                  elevation: 8.0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Cadastros',
+                          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                        Container(
+                          height: 200.0,
+                          child: SingleChildScrollView(
+                            child: Table(
+                              defaultColumnWidth: FixedColumnWidth(150.0),
+                              border: TableBorder.all(
+                                color: Colors.black,
+                                style: BorderStyle.solid,
+                                width: 1,
+                              ),
+                              children: [
+                                TableRow(children: [
+                                  Column(children: [Text('Nome', style: TextStyle(fontSize: 18.0))]),
+                                  Column(children: [Text('Número', style: TextStyle(fontSize: 18.0))]),
+                                ]),
+                                for (var cadastro in cadastros)
+                                  TableRow(children: [
+                                    Column(children: [Text(cadastro['texto'])]),
+                                    Column(children: [Text(cadastro['numero'].toString())]),
+                                  ]),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
