@@ -8,19 +8,22 @@ class DatabaseHelper {
 
   static Database? _database;
 
+  // Getter assíncrono para recuperar a instância do banco de dados, inicializando-o se necessário
   Future<Database> get database async {
     if (_database != null) return _database!;
     _database = await _initDb();
     return _database!;
   }
 
+  // Método para obter todos os registros da tabela 'cadastro'
   Future<List<Map<String, dynamic>>> getAllCadastros() async {
-  final db = await database;
-  return await db.query('cadastro');
-}
+    final db = await database;
+    return await db.query('cadastro');
+  }
 
+  // Método privado para inicializar o banco de dados
   Future<Database> _initDb() async {
-    sqfliteFfiInit();
+    sqfliteFfiInit(); // Inicialização do driver FFI para banco de dados
     databaseFactory = databaseFactoryFfi;
 
     final dbPath = await getDatabasesPath();
@@ -30,6 +33,7 @@ class DatabaseHelper {
       path,
       version: 1,
       onCreate: (db, version) async {
+        // Criação da tabela 'cadastro'
         await db.execute('''
           CREATE TABLE cadastro (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,6 +42,7 @@ class DatabaseHelper {
           );
         ''');
 
+        // Criação da tabela 'log_operacoes' para registrar operações de insert, update e delete
         await db.execute('''
           CREATE TABLE log_operacoes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,6 +51,7 @@ class DatabaseHelper {
           );
         ''');
 
+        // Trigger para log operação de inserção
         await db.execute('''
           CREATE TRIGGER trg_after_insert
           AFTER INSERT ON cadastro
@@ -55,6 +61,7 @@ class DatabaseHelper {
           END;
         ''');
 
+        // Trigger para log operação de atualização
         await db.execute('''
           CREATE TRIGGER trg_after_update
           AFTER UPDATE ON cadastro
@@ -64,6 +71,7 @@ class DatabaseHelper {
           END;
         ''');
 
+        // Trigger para log operação de exclusão
         await db.execute('''
           CREATE TRIGGER trg_after_delete
           AFTER DELETE ON cadastro
@@ -76,6 +84,7 @@ class DatabaseHelper {
     );
   }
 
+  // Método para inserir um registro na tabela 'cadastro'
   Future<int> insertCadastro(String texto, int numero) async {
     final db = await database;
     final result = await db.insert('cadastro', {
@@ -85,6 +94,7 @@ class DatabaseHelper {
     return result;
   }
 
+  // Método para atualizar um registro na tabela 'cadastro'
   Future<int> updateCadastro(int id, String texto, int numero) async {
     final db = await database;
     final result = await db.update(
@@ -96,11 +106,13 @@ class DatabaseHelper {
     return result;
   }
 
+  // Método para deletar um registro na tabela 'cadastro' com base no número fornecido
   Future<int> deleteCadastro(int numero) async {
     final db = await database;
     final cadastro = await getCadastroByNumero(numero);
     if (cadastro == null) return 0;
 
+    // Deleta o registro e retorna o número de linhas afetadas
     final result = await db.delete(
       'cadastro',
       where: 'numero = ?',
@@ -109,6 +121,7 @@ class DatabaseHelper {
     return result;
   }
 
+  // Método para obter um registro da tabela 'cadastro' com base no número fornecido
   Future<Map<String, dynamic>?> getCadastroByNumero(int numero) async {
     final db = await database;
     final results = await db.query(
@@ -117,6 +130,7 @@ class DatabaseHelper {
       whereArgs: [numero],
     );
 
+    // Retorna o primeiro resultado se houver, senão retorna null
     if (results.isNotEmpty) {
       return results.first;
     }

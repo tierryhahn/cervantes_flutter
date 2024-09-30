@@ -11,7 +11,7 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
-  final _textController = TextEditingController();
+  final _nameController = TextEditingController();
   final _numberController = TextEditingController();
   final dbHelper = DatabaseHelper();
   List<Map<String, dynamic>> cadastros = [];
@@ -22,6 +22,7 @@ class _HomeState extends State<Home> {
     _loadCadastros();
   }
 
+  // Método para carregar todos os cadastros do banco de dados
   Future<void> _loadCadastros() async {
     final allCadastros = await dbHelper.getAllCadastros();
     setState(() {
@@ -29,17 +30,20 @@ class _HomeState extends State<Home> {
     });
   }
 
+  // Método para exibir uma mensagem usando o ScaffoldMessenger
   void message({required String message}) {
     return _showMessage(context, message);
   }
 
+  // Método privado para exibir uma mensagem usando o ScaffoldMessenger
   void _showMessage(BuildContext context, String message) {
     ScaffoldMessenger.of(context)
         .showSnackBar(SnackBar(content: Text(message)));
   }
 
+  // Método para lidar com a inserção de um novo cadastro
   Future<void> _handleInsert(BuildContext context) async {
-    final text = _textController.text;
+    final text = _nameController.text;
     final number = int.tryParse(_numberController.text);
     if (text.isNotEmpty && number != null && number > 0) {
       try {
@@ -59,6 +63,7 @@ class _HomeState extends State<Home> {
     }
   }
 
+  // Método para buscar um cadastro pelo número e abrir a tela de edição
   Future<void> _searchCadastroForEditing(BuildContext context) async {
     final number = int.tryParse(_numberController.text);
 
@@ -81,6 +86,7 @@ class _HomeState extends State<Home> {
                   _loadCadastros();
                   if (context.mounted) Navigator.pop(context);
                 },
+                dbHelper: dbHelper,
               ),
             ),
           );
@@ -93,6 +99,7 @@ class _HomeState extends State<Home> {
     }
   }
 
+  // Método para deletar um cadastro pelo número
   Future<void> _handleDelete(BuildContext context) async {
     final number = int.tryParse(_numberController.text);
 
@@ -110,7 +117,7 @@ class _HomeState extends State<Home> {
   }
 
   void _clearForm() {
-    _textController.clear();
+    _nameController.clear();
     _numberController.clear();
   }
 
@@ -140,6 +147,7 @@ class _HomeState extends State<Home> {
     );
   }
 
+  // Widget para o card de registro, contendo o formulário de cadastro
   Card get cardRegister => Card(
         elevation: 8.0,
         shape: RoundedRectangleBorder(
@@ -157,7 +165,7 @@ class _HomeState extends State<Home> {
               SizedBox(
                 width: 300.0,
                 child: TextField(
-                  controller: _textController,
+                  controller: _nameController,
                   decoration: const InputDecoration(
                     labelText: 'Nome',
                     border: OutlineInputBorder(),
@@ -226,11 +234,13 @@ class _HomeState extends State<Home> {
         ),
       );
 
+  // Título do card de registro
   Text get cardRegisterTitle => const Text(
         'Teste Cervantes',
         style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
       );
 
+  // Widget para o card da tabela, exibindo os cadastros carregados
   Card get cardTable => Card(
         elevation: 8.0,
         shape: RoundedRectangleBorder(
@@ -263,6 +273,7 @@ class _HomeState extends State<Home> {
                           Text('Número', style: TextStyle(fontSize: 18.0))
                         ]),
                       ]),
+                      // Gera uma linha para cada cadastro
                       for (var cadastro in cadastros)
                         TableRow(children: [
                           Column(children: [Text(cadastro['texto'])]),
